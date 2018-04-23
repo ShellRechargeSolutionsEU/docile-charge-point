@@ -25,6 +25,10 @@ class InteractiveOcppTest extends OcppTest {
         |import scala.concurrent.duration._
         |import java.time._
         |
+        |import chargepoint.docile.dsl.AwaitTimeout
+        |
+        |implicit val awaitTimeout: AwaitTimeout = AwaitTimeout(45.seconds)
+        |
       """.stripMargin
 
     ammonite.Main(predefCode = imports).run(

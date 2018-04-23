@@ -173,6 +173,8 @@ object Runner extends StrictLogging {
                    |import java.time._
                    |import slogging.{LoggerFactory, StrictLogging}
                    |
+                   |import chargepoint.docile.dsl.AwaitTimeout
+                   |
                    |new chargepoint.docile.dsl.OcppTest
                    |  with chargepoint.docile.dsl.CoreOps
                    |  with chargepoint.docile.dsl.expectations.Ops
@@ -181,19 +183,23 @@ object Runner extends StrictLogging {
                    |
                    |  override val logger = LoggerFactory.getLogger("script")
                    |
+                   |  implicit val awaitTimeout: AwaitTimeout = AwaitTimeout(45.seconds)
+                   |
                    |  def run() {
                    """.stripMargin
     val appendix = ";\n  }\n}"
 
     val fileContents = scala.io.Source.fromFile(file).getLines.mkString("\n")
 
+    logger.info(s"Parsing and compiling script '$f'")
+
     val fileAst = toolbox.parse(preamble + fileContents + appendix)
 
-    logger.debug(s"Parsed $f")
+    logger.info(s"Parsed '$f'")
 
     val compiledCode = toolbox.compile(fileAst)
 
-    logger.debug(s"Compiled $f")
+    logger.info(s"Compiled '$f'")
 
     TestCase(testName, () => compiledCode().asInstanceOf[OcppTest])
   }

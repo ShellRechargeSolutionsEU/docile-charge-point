@@ -10,10 +10,14 @@ trait Ops {
 
   self: CoreOps with expectations.Ops =>
 
-  def authorize(idTag: String = "01020304"): AuthorizeRes =
+  def authorize(idTag: String = "01020304")(
+    implicit awaitTimeout: AwaitTimeout
+  ): AuthorizeRes =
     sendSync(AuthorizeReq(idTag))
 
-  def heartbeat(): HeartbeatRes =
+  def heartbeat()(
+    implicit awaitTimeout: AwaitTimeout
+  ): HeartbeatRes =
     sendSync(HeartbeatReq)
 
   def bootNotification(
@@ -26,6 +30,8 @@ trait Ops {
     imsi: Option[String] = None,
     meterType: Option[String] = None,
     meterSerialNumber: Option[String] = None
+  )(
+    implicit awaitTimeout: AwaitTimeout
   ): BootNotificationRes =
     sendSync(BootNotificationReq(
       chargePointVendor,
@@ -43,6 +49,8 @@ trait Ops {
     vendorId: String = "NewMotion",
     messageId: Option[String] = Some("MogrifyEspolusion"),
     data: Option[String] = None
+  )(
+    implicit awaitTimeout: AwaitTimeout
   ): CentralSystemDataTransferRes =
     sendSync(CentralSystemDataTransferReq(
       vendorId,
@@ -52,6 +60,8 @@ trait Ops {
 
   def diagnosticsStatusNotification(
     status: DiagnosticsStatus = DiagnosticsStatus.Idle
+  )(
+    implicit awaitTimeout: AwaitTimeout
   ): DiagnosticsStatusNotificationRes.type =
     sendSync(DiagnosticsStatusNotificationReq(
       status
@@ -59,6 +69,8 @@ trait Ops {
 
   def firmwareStatusNotification(
     status: FirmwareStatus = FirmwareStatus.Idle
+  )(
+    implicit awaitTimeout: AwaitTimeout
   ): FirmwareStatusNotificationRes.type =
     sendSync(FirmwareStatusNotificationReq(
       status
@@ -83,6 +95,8 @@ trait Ops {
         )
       )
     )
+  )(
+    implicit awaitTimeout: AwaitTimeout
   ): MeterValuesRes.type =
     sendSync(MeterValuesReq(
       scope,
@@ -96,6 +110,8 @@ trait Ops {
     timestamp: ZonedDateTime = ZonedDateTime.now,
     meterStart: Int = 0,
     reservationId: Option[Int] = None
+  )(
+    implicit awaitTimeout: AwaitTimeout
   ): StartTransactionRes =
     sendSync(StartTransactionReq(
       connector,
@@ -110,6 +126,8 @@ trait Ops {
     status: ChargePointStatus = ChargePointStatus.Available(),
     timestamp: Option[ZonedDateTime] = Some(ZonedDateTime.now()),
     vendorId: Option[String] = None
+  )(
+    implicit awaitTimeout: AwaitTimeout
   ): StatusNotificationRes.type =
     sendSync(StatusNotificationReq(
       scope,
@@ -125,6 +143,8 @@ trait Ops {
     meterStop: Int = 16000,
     reason: StopReason = StopReason.Local,
     meters: List[meter.Meter] = List()
+  )(
+    implicit awaitTimeout: AwaitTimeout
   ): StopTransactionRes =
     sendSync(StopTransactionReq(
       transactionId,
@@ -135,8 +155,13 @@ trait Ops {
       meters
     ))
 
-  def sendSync[REQ <: CentralSystemReq, RES <: CentralSystemRes : ClassTag](req: REQ)
-                                                                           (implicit reqRes: CentralSystemReqRes[REQ, RES]): RES = {
+  def sendSync[REQ <: CentralSystemReq, RES <: CentralSystemRes : ClassTag](
+    req: REQ
+  )(
+    implicit
+    reqRes: CentralSystemReqRes[REQ, RES],
+    awaitTimeout: AwaitTimeout
+  ): RES = {
     self.send(req)
     self.expectIncoming(matching { case res: RES => res })
   }

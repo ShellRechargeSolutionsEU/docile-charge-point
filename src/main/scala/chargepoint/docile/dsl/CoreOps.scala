@@ -50,11 +50,14 @@ trait CoreOps extends OpsLogging with MessageLogging {
     }
   }
 
-  def awaitIncoming(num: Int): Seq[IncomingMessage] = {
+  def awaitIncoming(num: Int)(implicit awaitTimeout: AwaitTimeout): Seq[IncomingMessage] = {
+
+    val AwaitTimeout(timeout) = awaitTimeout
     def getMsgs = connectionData.receivedMsgManager.dequeue(num)
-    Try(Await.result(getMsgs, 45.seconds)) match {
+
+    Try(Await.result(getMsgs, timeout)) match {
       case Success(msgs)                => msgs
-      case Failure(e: TimeoutException) => fail(s"Expected message not received after 45 seconds")
+      case Failure(e: TimeoutException) => fail(s"Expected message not received after $timeout")
       case Failure(e)                   => error(e)
     }
   }

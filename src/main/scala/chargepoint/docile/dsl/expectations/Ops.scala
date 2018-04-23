@@ -40,7 +40,7 @@ trait Ops {
 
   sealed trait IncomingRequestProcessor[+T] extends IncomingMessageProcessor[T]
 
-  def expectIncoming[T](proc: IncomingMessageProcessor[T]): T = {
+  def expectIncoming[T](proc: IncomingMessageProcessor[T])(implicit awaitTimeout: AwaitTimeout): T = {
     val promisedMsg = awaitIncoming(1).head
 
     proc.lift(promisedMsg) match {
@@ -53,7 +53,7 @@ trait Ops {
   }
 
   // TODO: HList time?
-  def expectInAnyOrder[T](expectations: IncomingMessageProcessor[T]*): Seq[T] = {
+  def expectInAnyOrder[T](expectations: IncomingMessageProcessor[T]*)(implicit awaitTimeout: AwaitTimeout): Seq[T] = {
     val messages = awaitIncoming(expectations.length)
 
     val firstSatisfyingPermutation =
@@ -71,6 +71,35 @@ trait Ops {
             e.result(m)
         }
     }
+  }
+
+  def expectAllIgnoringUnmatched[T](expectations: IncomingMessageProcessor[T]*)(implicit awaitTimeout: AwaitTimeout): Seq[T] = {
+
+    def loop(matchesCount: Int, results: IndexedSeq[Option[T]]): IndexedSeq[Option[T]] = {
+      val Seq(m) = awaitIncoming(1)
+      val processorIndex = expectations.indexWhere(_.accepts(m))
+
+      if (processorIndex < 0) {
+        opsLogger.info(s"Ignoring message $m")
+        loop(matchesCount, results)
+
+      } else {
+        val p = expectations(processorIndex)
+        p.fireSideEffects(m)
+        val result = p.result(m)
+        val nextResults = results.updated(processorIndex, Some(result))
+        val nextMatchesCount: Int = results(processorIndex) match {
+          case Some(_) => matchesCount
+          case None => matchesCount + 1
+        }
+
+        opsLogger.info(s"Received $processorIndex: $m, $nextMatchesCount to go")
+
+        loop(nextMatchesCount, nextResults)
+      }
+    }
+
+    loop(0, IndexedSeq.fill(expectations.size)(None)).flatten
   }
 
   def anything: IncomingMessageProcessor[IncomingMessage] =
