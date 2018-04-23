@@ -1,15 +1,18 @@
 package chargepoint.docile.dsl
 
 import java.net.URI
+
 import scala.concurrent.Promise
 import scala.concurrent.ExecutionContext.Implicits.global
 import chargepoint.docile.dsl.expectations.IncomingMessage
 import com.thenewmotion.ocpp.Version
 import com.thenewmotion.ocpp.json.api._
 import com.thenewmotion.ocpp.messages.{ChargePointReq, ChargePointRes}
-import slogging.StrictLogging
+import slogging.LoggerFactory
 
-trait OcppTest extends StrictLogging {
+trait OcppTest extends MessageLogging {
+  private val connectionLogger = LoggerFactory.getLogger("connection")
+
   protected var connectionData: OcppConnectionData = _
 
   def runConnected(
@@ -31,25 +34,28 @@ trait OcppTest extends StrictLogging {
     version: Version,
     authKey: Option[String]
   ): Unit = {
+
+    connectionLogger.info(s"Connecting to OCPP v${version.name} endpoint $endpoint")
+
     val connection = new OcppJsonClient(chargerId, endpoint, List(version), authKey) {
 
       override def onDisconnect(): Unit = {
-        logger.debug(s"Disconnection confirmed by OCPP library")
+        connectionLogger.info(s"Gracefully disconnected from endpoint $endpoint")
         connectionData = connectionData.copy(ocppClient = None)
       }
 
       override def onError(e: OcppError): Unit = {
-        logger.info(s"Received OCPP error: $e")
+        connectionLogger.error(s"OCPP error received: $e")
       }
 
       override def requestHandler: ChargePointRequestHandler = {
         (req: ChargePointReq) =>
-          logger.info(s"<< $req")
+          incomingLogger.info(s"$req")
 
           val responsePromise = Promise[ChargePointRes]()
 
           def respond(res: ChargePointRes): Unit = {
-            logger.info(s">> $res")
+            outgoingLogger.info(s"$res")
             responsePromise.success(res)
             ()
           }

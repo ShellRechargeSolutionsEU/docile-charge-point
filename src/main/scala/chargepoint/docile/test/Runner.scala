@@ -132,7 +132,6 @@ class Runner(testCases: Seq[TestCase]) extends StrictLogging {
     }
 
     logger.debug(s"Test ${c.name} run; disconnecting...")
-
     logger.debug(s"Disconnected OCPP connection for ${runnerCfg.chargePointId}/${c.name}")
 
     c.name -> res
@@ -162,15 +161,20 @@ object Runner extends StrictLogging {
     val toolbox = currentMirror.mkToolBox()
 
     val preamble = s"""
+                   |import com.thenewmotion.ocpp.messages._
+                   |
                    |import scala.language.postfixOps
                    |import scala.concurrent.duration._
                    |import java.time._
-                   |import com.thenewmotion.ocpp.messages._
+                   |import slogging.{LoggerFactory, StrictLogging}
                    |
                    |new chargepoint.docile.dsl.OcppTest
                    |  with chargepoint.docile.dsl.CoreOps
                    |  with chargepoint.docile.dsl.expectations.Ops
-                   |  with chargepoint.docile.dsl.shortsend.Ops {
+                   |  with chargepoint.docile.dsl.shortsend.Ops
+                   |  with StrictLogging {
+                   |
+                   |  override val logger = LoggerFactory.getLogger("script")
                    |
                    |  def run() {
                    """.stripMargin

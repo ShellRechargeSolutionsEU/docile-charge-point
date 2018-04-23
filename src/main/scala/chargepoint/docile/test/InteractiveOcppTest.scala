@@ -19,10 +19,12 @@ class InteractiveOcppTest extends OcppTest {
       """
         |import ops._
         |import promptCommands._
+        |import com.thenewmotion.ocpp.messages._
+        |
         |import scala.language.postfixOps
         |import scala.concurrent.duration._
         |import java.time._
-        |import com.thenewmotion.ocpp.messages._
+        |
       """.stripMargin
 
     ammonite.Main(predefCode = imports).run(

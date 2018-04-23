@@ -8,9 +8,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
 import com.thenewmotion.ocpp.messages.{CentralSystemReq, CentralSystemReqRes, CentralSystemRes}
 import expectations.IncomingMessage
-import slogging.StrictLogging
 
-trait CoreOps extends StrictLogging {
+trait CoreOps extends OpsLogging with MessageLogging {
 
   protected def connectionData: OcppConnectionData
 
@@ -31,20 +30,19 @@ trait CoreOps extends StrictLogging {
       case None =>
         throw ExpectationFailed("Trying to send an OCPP message while not connected")
       case Some (client) =>
-        logger.info(s">> $req")
+        outgoingLogger.info(s"$req")
         client.send(req)(reqRes) onComplete {
           case Success(res) =>
-            logger.info(s"<< $res")
+            incomingLogger.info(s"$res")
             connectionData.receivedMsgManager.enqueue(
               IncomingMessage(res)
             )
           case Failure(e) =>
-            logger.info(s"Failed to get response to outgoing OCPP request $req: ${e.getMessage}")
+            opsLogger.error(s"Failed to get response to outgoing OCPP request $req: ${e.getMessage}")
             // TODO handle this nicer; should be possible to write scripts expecting failure (without using catch ;-) )
             throw ExecutionError(e)
     }
   }
-
 
   def awaitIncoming(num: Int): Seq[IncomingMessage] = {
     def getMsgs = connectionData.receivedMsgManager.dequeue(num)
