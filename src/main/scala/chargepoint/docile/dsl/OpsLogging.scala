@@ -1,7 +1,9 @@
 package chargepoint.docile.dsl
 
-import slogging.{Logger, LoggerFactory, StrictLogging}
+import com.typesafe.scalalogging.Logger
+import org.slf4j.LoggerFactory
 
-trait OpsLogging extends StrictLogging {
-  protected val opsLogger: Logger = LoggerFactory.getLogger("operation")
+
+trait OpsLogging {
+  protected val opsLogger: Logger = Logger(LoggerFactory.getLogger("operation"))
 }

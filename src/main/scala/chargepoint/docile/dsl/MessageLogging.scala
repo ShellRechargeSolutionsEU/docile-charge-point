@@ -1,8 +1,10 @@
 package chargepoint.docile.dsl
 
-import slogging.{Logger, LoggerFactory, StrictLogging}
+import com.typesafe.scalalogging.Logger
+import org.slf4j.LoggerFactory
 
-trait MessageLogging extends StrictLogging {
-  protected val incomingLogger: Logger = LoggerFactory.getLogger("| <<=")
-  protected val outgoingLogger: Logger = LoggerFactory.getLogger("| =>>")
+
+trait MessageLogging {
+  protected val incomingLogger: Logger = Logger(LoggerFactory.getLogger("| <<="))
+  protected val outgoingLogger: Logger = Logger(LoggerFactory.getLogger("| =>>"))
 }

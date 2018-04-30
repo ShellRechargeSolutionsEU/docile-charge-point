@@ -2,7 +2,7 @@ package chargepoint.docile.dsl
 
 import scala.concurrent.{Future, Promise}
 import chargepoint.docile.dsl.expectations.IncomingMessage
-import slogging.StrictLogging
+import com.typesafe.scalalogging.StrictLogging
 
 import scala.collection.mutable
 

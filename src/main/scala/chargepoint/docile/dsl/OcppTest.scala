@@ -2,17 +2,18 @@ package chargepoint.docile.dsl
 
 import java.net.URI
 
-import scala.concurrent.{Await, Promise}
+import scala.concurrent.{Await, ExecutionContext, Promise}
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.ExecutionContext.Implicits.global
 import chargepoint.docile.dsl.expectations.IncomingMessage
 import com.thenewmotion.ocpp.Version
 import com.thenewmotion.ocpp.json.api._
 import com.thenewmotion.ocpp.messages.{ChargePointReq, ChargePointRes}
-import slogging.LoggerFactory
+import com.typesafe.scalalogging.Logger
+import org.slf4j.LoggerFactory
+
 
 trait OcppTest extends MessageLogging {
-  private val connectionLogger = LoggerFactory.getLogger("connection")
+  private val connectionLogger = Logger(LoggerFactory.getLogger("connection"))
 
   protected var connectionData: OcppConnectionData = _
 
@@ -36,11 +37,12 @@ trait OcppTest extends MessageLogging {
     authKey: Option[String]
   ): Unit = {
 
+    implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+
     connectionLogger.info(s"Connecting to OCPP v${version.name} endpoint $endpoint")
 
-    val connection = OcppJsonClient(chargerId, endpoint, List(version), authKey) {
-
-      (req: ChargePointReq) =>
+    val connection: OcppJsonClient = OcppJsonClient(chargerId, endpoint, List(version), authKey) {
+      req: ChargePointReq =>
 
         incomingLogger.info(s"$req")
 

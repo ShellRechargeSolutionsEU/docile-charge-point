@@ -7,9 +7,9 @@ import ch.qos.logback.classic.{Level, Logger}
 import scala.util.{Failure, Success, Try}
 import chargepoint.docile.dsl.{ExecutionError, ExpectationFailed}
 import com.thenewmotion.ocpp.Version
+import com.typesafe.scalalogging.StrictLogging
 import org.rogach.scallop._
 import org.slf4j.LoggerFactory
-import slogging.{LoggerConfig, SLF4JLoggerFactory, StrictLogging}
 import test._
 
 import scala.concurrent.ExecutionContextExecutor
@@ -107,9 +107,8 @@ object Main extends App with StrictLogging {
     verify()
   }
 
-  LoggerConfig.factory = SLF4JLoggerFactory
-
   val rootLogger = LoggerFactory.getLogger("ROOT").asInstanceOf[Logger]
+
   val rootLogLevel = conf.verbose() match {
     case 0 => Level.OFF
     case 1 => Level.ERROR

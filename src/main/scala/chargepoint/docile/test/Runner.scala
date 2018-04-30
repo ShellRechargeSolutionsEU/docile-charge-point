@@ -11,8 +11,9 @@ import scala.concurrent.{Await, Future, Promise, duration}
 import duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 import chargepoint.docile.dsl._
-import slogging.{LoggerFactory, StrictLogging}
 import com.thenewmotion.ocpp
+import com.typesafe.scalalogging.Logger
+import org.slf4j.LoggerFactory
 
 case class RunnerConfig(
   number: Int,
@@ -28,9 +29,9 @@ case class RunnerConfig(
   *
   * @param testCases The test cases to run
   */
-class Runner(testCases: Seq[TestCase]) extends StrictLogging {
+class Runner(testCases: Seq[TestCase]) {
 
-  override protected val logger = LoggerFactory.getLogger("runner")
+  private val logger: Logger = Logger(LoggerFactory.getLogger("runner"))
 
   /**
     * Run the test cases in this runner according to the given configuration
@@ -142,9 +143,9 @@ class Runner(testCases: Seq[TestCase]) extends StrictLogging {
 }
 
 
-object Runner extends StrictLogging {
+object Runner {
 
-  override protected val logger = LoggerFactory.getLogger("runner")
+  private val logger = LoggerFactory.getLogger("runner")
 
   def interactive: Runner = new Runner(
     Seq(TestCase("Interactive test", () => new InteractiveOcppTest))
@@ -171,19 +172,18 @@ object Runner extends StrictLogging {
                    |import scala.language.postfixOps
                    |import scala.concurrent.duration._
                    |import java.time._
-                   |import slogging.{LoggerFactory, StrictLogging}
+                   |import com.typesafe.scalalogging.Logger
+                   |import org.slf4j.LoggerFactory
                    |
                    |import chargepoint.docile.dsl.AwaitTimeout
                    |
                    |new chargepoint.docile.dsl.OcppTest
                    |  with chargepoint.docile.dsl.CoreOps
                    |  with chargepoint.docile.dsl.expectations.Ops
-                   |  with chargepoint.docile.dsl.shortsend.Ops
-                   |  with StrictLogging {
+                   |  with chargepoint.docile.dsl.shortsend.Ops {
                    |
-                   |  override val logger = LoggerFactory.getLogger("script")
-                   |
-                   |  implicit val awaitTimeout: AwaitTimeout = AwaitTimeout(45.seconds)
+                   |  private val logger = Logger(LoggerFactory.getLogger("script"))
+                   |  private implicit val awaitTimeout: AwaitTimeout = AwaitTimeout(45.seconds)
                    |
                    |  def run() {
                    """.stripMargin
