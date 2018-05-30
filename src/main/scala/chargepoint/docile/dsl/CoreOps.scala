@@ -2,15 +2,21 @@ package chargepoint.docile
 package dsl
 
 import java.util.concurrent.TimeoutException
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
 import com.thenewmotion.ocpp.messages.{CentralSystemReq, CentralSystemReqRes, CentralSystemRes}
 import com.thenewmotion.ocpp.json.api.OcppException
+import com.typesafe.scalalogging.Logger
 import expectations.IncomingMessage
+import org.slf4j.LoggerFactory
 
 trait CoreOps extends OpsLogging with MessageLogging {
+
+  val logger = Logger(LoggerFactory.getLogger("script"))
+  def say(m: String): Unit = logger.info(m)
 
   protected def connectionData: OcppConnectionData
 

@@ -182,10 +182,7 @@ object Runner {
                    |  with chargepoint.docile.dsl.expectations.Ops
                    |  with chargepoint.docile.dsl.shortsend.Ops {
                    |
-                   |  private val logger = Logger(LoggerFactory.getLogger("script"))
                    |  private implicit val awaitTimeout: AwaitTimeout = AwaitTimeout(45.seconds)
-                   |
-                   |  private def say(m: String): Unit = logger.info(m)
                    |
                    |  def run() {
                    """.stripMargin
