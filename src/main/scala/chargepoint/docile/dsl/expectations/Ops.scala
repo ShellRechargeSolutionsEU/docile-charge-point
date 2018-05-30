@@ -185,7 +185,7 @@ trait Ops {
       }
 
     def printingTheMessage: IncomingMessageProcessor[T] =
-      self withSideEffects (println(_))
+      self withSideEffects println
   }
 
   implicit class RichIncomingRequestProcessor[T](self: IncomingRequestProcessor[T]) {

@@ -124,7 +124,7 @@ object Main extends App with StrictLogging {
   implicit val ec: ExecutionContextExecutor = concurrent.ExecutionContext.Implicits.global
 
   conf.makesSense.left.foreach { errMsg =>
-    println(errMsg)
+    logger.error(errMsg)
     sys.exit(1)
   }
 
@@ -216,7 +216,7 @@ object Main extends App with StrictLogging {
     }
 
     countsPerChargePoint foreach { case (chargePointId, counts) =>
-      println(s"$chargePointId: ${counts._1} failed / ${counts._2} errors / ${counts._3} passed")
+      logger.info(s"$chargePointId: ${counts._1} failed / ${counts._2} errors / ${counts._3} passed")
     }
 
     !countsPerChargePoint.values.exists(c => c._1 != 0 || c._2 != 0)
