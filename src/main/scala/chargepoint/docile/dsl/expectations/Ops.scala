@@ -76,26 +76,28 @@ trait Ops {
   def expectAllIgnoringUnmatched[T](expectations: IncomingMessageProcessor[T]*)(implicit awaitTimeout: AwaitTimeout): Seq[T] = {
 
     def loop(matchesCount: Int, results: IndexedSeq[Option[T]]): IndexedSeq[Option[T]] = {
-      val Seq(m) = awaitIncoming(1)
-      val processorIndex = expectations.indexWhere(_.accepts(m))
-
-      if (processorIndex < 0) {
-        opsLogger.info(s"Ignoring message $m")
-        loop(matchesCount, results)
-
+      if (matchesCount >= expectations.length) {
+        results
       } else {
-        val p = expectations(processorIndex)
-        p.fireSideEffects(m)
-        val result = p.result(m)
-        val nextResults = results.updated(processorIndex, Some(result))
-        val nextMatchesCount: Int = results(processorIndex) match {
-          case Some(_) => matchesCount
-          case None => matchesCount + 1
+        val Seq(m) = awaitIncoming(1)
+        val processorIndex = expectations.indexWhere(_.accepts(m))
+
+        if (processorIndex < 0) {
+          opsLogger.info(s"Ignoring message $m")
+          loop(matchesCount, results)
+        } else {
+          val p = expectations(processorIndex)
+          p.fireSideEffects(m)
+          val result = p.result(m)
+          val nextResults = results.updated(processorIndex, Some(result))
+          val nextMatchesCount: Int = results(processorIndex) match {
+            case Some(_) => matchesCount
+            case None => matchesCount + 1
+          }
+
+          opsLogger.info(s"Received $processorIndex: $m, $nextMatchesCount to go")
+          loop(nextMatchesCount, nextResults)
         }
-
-        opsLogger.info(s"Received $processorIndex: $m, $nextMatchesCount to go")
-
-        loop(nextMatchesCount, nextResults)
       }
     }
 
