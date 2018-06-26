@@ -79,7 +79,11 @@ trait CoreOps extends OpsLogging with MessageLogging {
 
   def error(throwable: Throwable): Nothing = throw ExecutionError(throwable)
 
-  def wait(duration: FiniteDuration): Unit = Thread.sleep(duration.toMillis)
+  def sleep(duration: FiniteDuration): Unit = {
+
+    opsLogger.info(s"Sleeping for $duration")
+    Thread.sleep(duration.toMillis)
+  }
 
   def prompt(cue: String): String = {
     println(s"$cue: ")
