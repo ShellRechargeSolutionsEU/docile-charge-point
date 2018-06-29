@@ -23,10 +23,13 @@ class InteractiveOcppTest extends OcppTest {
         |
         |import scala.language.postfixOps
         |import scala.concurrent.duration._
+        |import scala.util.Random
         |import java.time._
         |
         |import chargepoint.docile.dsl.AwaitTimeout
+        |import chargepoint.docile.dsl.Randomized._
         |
+        |implicit val rand: Random = new Random()
         |implicit val awaitTimeout: AwaitTimeout = AwaitTimeout(45.seconds)
         |
       """.stripMargin

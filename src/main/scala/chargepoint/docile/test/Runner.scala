@@ -171,11 +171,13 @@ object Runner {
                    |
                    |import scala.language.postfixOps
                    |import scala.concurrent.duration._
+                   |import scala.util.Random
                    |import java.time._
                    |import com.typesafe.scalalogging.Logger
                    |import org.slf4j.LoggerFactory
                    |
                    |import chargepoint.docile.dsl.AwaitTimeout
+                   |import chargepoint.docile.dsl.Randomized._
                    |
                    |new chargepoint.docile.dsl.OcppTest
                    |  with chargepoint.docile.dsl.CoreOps
@@ -183,6 +185,7 @@ object Runner {
                    |  with chargepoint.docile.dsl.shortsend.Ops {
                    |
                    |  private implicit val awaitTimeout: AwaitTimeout = AwaitTimeout(45.seconds)
+                   |  private implicit val rand: Random = new Random()
                    |
                    |  def run() {
                    """.stripMargin
