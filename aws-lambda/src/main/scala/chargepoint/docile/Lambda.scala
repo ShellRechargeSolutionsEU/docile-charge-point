@@ -57,7 +57,7 @@ object Lambda extends App {
       ocppVersion = Version.withName(cpVersion).getOrElse(Version.V15),
       authKey = cpAuthKey,
       repeat = RunOnce,
-      defaultAwaitTimeout = AwaitTimeoutInMillis(45 * 60 * 1000),
+      defaultAwaitTimeout = AwaitTimeoutInMillis(45 * 1000),
       sslContext = SSLContext.getDefault
     )
 
