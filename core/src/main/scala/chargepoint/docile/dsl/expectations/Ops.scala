@@ -21,36 +21,6 @@ trait Ops[
 ] {
   self: CoreOps[VFam, OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes] =>
 
-  /** An IncomingMessageProcessor[T] is like a PartialFunction[T] with side effects */
-  trait IncomingMessageProcessor[+T] {
-    /** Whether this processor can do something with a certain incoming message */
-    // TODO add type alias in CoreOps to get rid of this VFam parameterization everywhere?
-    def accepts(msg: IncomingMessage): Boolean
-
-    /**
-     * The outcome of applying this processor to the given incoming message.
-     *
-     *  Applying the processor do a message outside of its domain should throw
-     *  a MatchError.
-     */
-    def result(msg: IncomingMessage): T
-
-    /**
-     * Execute the side effects of this processor.
-     *
-     * In an OCPP test, this is supposed to happen when an assertion expecting a
-     * certain incoming message has received an inomcing message that matches
-     * the expectation.
-     */
-    def fireSideEffects(msg: IncomingMessage): Unit
-
-    def lift(msg: IncomingMessage): Option[T] =
-      if (accepts(msg))
-        Some(result(msg))
-      else
-        None
-  }
-
   sealed trait IncomingRequestProcessor[+T] extends IncomingMessageProcessor[T]
 
   def expectIncoming[T](proc: IncomingMessageProcessor[T])(implicit awaitTimeout: AwaitTimeout): T = {

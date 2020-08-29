@@ -13,7 +13,6 @@ import scala.util.{Failure, Success, Try}
 import com.thenewmotion.ocpp.json.api.{OcppError, OcppException}
 import com.thenewmotion.ocpp.messages.{ReqRes, Request, Response}
 import com.typesafe.scalalogging.Logger
-import expectations.{IncomingMessage => GenericIncomingMessage}
 import org.slf4j.LoggerFactory
 
 trait CoreOps[
@@ -26,13 +25,16 @@ trait CoreOps[
   InReqRes[_ <: InReq, _ <: OutRes] <: ReqRes[_, _]
 ] extends OpsLogging with MessageLogging {
 
+  type IncomingMessage =
+    GenericIncomingMessage[OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
+  type IncomingMessageProcessor[+T] =
+    GenericIncomingMessageProcessor[OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes, T]
 
   implicit val csmsMessageTypes: CsmsMessageTypesForVersionFamily[VFam, OutReq, InRes, OutReqRes]
   implicit val csMessageTypes:     CsMessageTypesForVersionFamily[VFam, InReq, OutRes, InReqRes]
 
   implicit def executionContext: ExecutionContext
 
-  type IncomingMessage = GenericIncomingMessage[OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
   object IncomingMessage {
     def apply(res: InRes): IncomingMessage = GenericIncomingMessage[OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes](res)
     def apply(req: InReq, respond: OutRes => Unit): IncomingMessage = GenericIncomingMessage[OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes](req, respond)
@@ -42,7 +44,7 @@ trait CoreOps[
   val logger = Logger(LoggerFactory.getLogger("script"))
   def say(m: String): Unit = logger.info(m)
 
-  protected def connectionData: OcppConnectionData[VFam, OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
+  protected def connectionData: DocileConnection[VFam, _, OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
 
   /**
    * Send an OCPP request to the Central System under test.
@@ -77,6 +79,15 @@ trait CoreOps[
             opsLogger.error(s"Failed to get response to outgoing OCPP request $req: ${e.getMessage}\n\t${e.getStackTrace.mkString("\n\t")}")
             throw ExecutionError(e)
     }
+  }
+
+  // WIP an operation to add a default handler for a certain subset of incoming messages
+  def handlingIncomingMessages[T](proc: IncomingMessageProcessor[_])(f: => T): T = {
+    connectionData.pushIncomingMessageHandler(proc)
+    val result = f
+    connectionData.popIncomingMessageHandler()
+
+    result
   }
 
   def awaitIncoming(num: Int)(implicit awaitTimeout: AwaitTimeout): Seq[IncomingMessage] = {

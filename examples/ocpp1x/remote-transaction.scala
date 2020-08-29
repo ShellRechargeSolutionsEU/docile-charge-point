@@ -10,9 +10,9 @@ val auth = authorize(chargeTokenId).idTag
 if (auth.status == AuthorizationStatus.Accepted) {
   say("Obtained authorization from Central System; starting transaction")
 
-  statusNotification(status = ChargePointStatus.Occupied(Some(OccupancyKind.Preparing)))
-  val transId = startTransaction(meterStart = 300, idTag = chargeTokenId).transactionId
-  statusNotification(status = ChargePointStatus.Occupied(Some(OccupancyKind.Charging)))
+  statusNotification(status = ChargePointStatus.Occupied(Some(OccupancyKind.Preparing)), timestamp=Some(ZonedDateTime.now.withNano(0)))
+  val transId = startTransaction(meterStart = 300, idTag = chargeTokenId, timestamp=ZonedDateTime.now.withNano(0)).transactionId
+  statusNotification(status = ChargePointStatus.Occupied(Some(OccupancyKind.Charging)), timestamp=Some(ZonedDateTime.now.withNano(0)))
 
   say(s"Transaction started with ID $transId; awaiting remote stop")
 
@@ -36,9 +36,9 @@ if (auth.status == AuthorizationStatus.Accepted) {
   // handle UnlockConnectorReq if present
   Try(expectIncoming(unlockConnectorReq.respondingWith(UnlockConnectorRes(UnlockStatus.NotSupported))))
   
-  statusNotification(status = ChargePointStatus.Occupied(Some(OccupancyKind.Finishing)))
-  stopTransaction(transactionId = transId, idTag = Some(chargeTokenId))
-  statusNotification(status = ChargePointStatus.Available())
+  statusNotification(status = ChargePointStatus.Occupied(Some(OccupancyKind.Finishing)), timestamp=Some(ZonedDateTime.now.withNano(0)))
+  stopTransaction(transactionId = transId, idTag = Some(chargeTokenId), timestamp=ZonedDateTime.now.withNano(0))
+  statusNotification(status = ChargePointStatus.Available(), timestamp=Some(ZonedDateTime.now.withNano(0)))
 
   say("Transaction stopped")
 

@@ -1,12 +1,11 @@
-package chargepoint.docile
-package dsl
-package expectations
+package chargepoint.docile.dsl
+
+import com.thenewmotion.ocpp.json.api.OcppError
+import com.thenewmotion.ocpp.messages.{ReqRes, Request, Response}
 
 import scala.language.higherKinds
-import com.thenewmotion.ocpp.messages.{ReqRes, Request, Response}
-import com.thenewmotion.ocpp.json.api.OcppError
 
-sealed trait IncomingMessage[
+sealed trait GenericIncomingMessage[
   OutgoingReqBound <: Request,
   IncomingResBound <: Response,
   OutgoingReqRes[_ <: OutgoingReqBound, _ <: IncomingResBound] <: ReqRes[_, _],
@@ -15,7 +14,7 @@ sealed trait IncomingMessage[
   IncomingReqRes[_ <: IncomingReqBound, _ <: OutgoingResBound] <: ReqRes[_, _]
 ]
 
-object IncomingMessage {
+object GenericIncomingMessage {
   def apply[
     OutReq <: Request,
     InRes <: Response,
@@ -90,7 +89,7 @@ case class IncomingResponse[
   InReqRes[_ <: InReq, _ <: OutRes] <: ReqRes[_, _]
 ](
   res: InRes
-) extends IncomingMessage[
+) extends GenericIncomingMessage[
   OutReq,
   InRes,
   OutReqRes,
@@ -109,7 +108,7 @@ case class IncomingRequest[
 ](
   req: InReq,
   respond: OutRes => Unit
-) extends IncomingMessage[
+) extends GenericIncomingMessage[
   OutReq,
   InRes,
   OutReqRes,
@@ -125,7 +124,7 @@ case class IncomingError[
   InReq <: Request,
   OutRes <: Response,
   InReqRes[_ <: InReq, _ <: OutRes] <: ReqRes[_, _]
-](error: OcppError) extends IncomingMessage[
+](error: OcppError) extends GenericIncomingMessage[
   OutReq,
   InRes,
   OutReqRes,

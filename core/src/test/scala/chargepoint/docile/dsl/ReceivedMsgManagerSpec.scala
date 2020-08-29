@@ -1,6 +1,5 @@
 package chargepoint.docile.dsl
 
-import chargepoint.docile.dsl.expectations.IncomingMessage
 import com.thenewmotion.ocpp.messages.v1x._
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
@@ -19,7 +18,7 @@ class ReceivedMsgManagerSpec(implicit ee: ExecutionEnv) extends Specification {
         ChargePointRes,
         ChargePointReqRes
       ]
-      val testMsg = IncomingMessage[
+      val testMsg = GenericIncomingMessage[
         CentralSystemReq,
         CentralSystemRes,
         CentralSystemReqRes,
@@ -46,7 +45,7 @@ class ReceivedMsgManagerSpec(implicit ee: ExecutionEnv) extends Specification {
         ChargePointRes,
         ChargePointReqRes
       ]
-      val testMsg = IncomingMessage[
+      val testMsg = GenericIncomingMessage[
         CentralSystemReq,
         CentralSystemRes,
         CentralSystemReqRes,
@@ -104,7 +103,7 @@ class ReceivedMsgManagerSpec(implicit ee: ExecutionEnv) extends Specification {
       ChargePointReqRes
     ]
 
-    def testMsg(seqNo: Int) = IncomingMessage[
+    def testMsg(seqNo: Int) = GenericIncomingMessage[
       CentralSystemReq,
       CentralSystemRes,
       CentralSystemReqRes,

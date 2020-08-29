@@ -3,7 +3,8 @@ package chargepoint.docile.dsl.expectations
 import scala.collection.JavaConverters._
 import scala.concurrent.TimeoutException
 import scala.concurrent.ExecutionContext.global
-import chargepoint.docile.dsl.{AwaitTimeout, AwaitTimeoutInMillis, CoreOps, OcppConnectionData}
+import chargepoint.docile.dsl.{AwaitTimeout, AwaitTimeoutInMillis, CoreOps, DocileConnection, GenericIncomingMessage, IncomingError, IncomingRequest, IncomingResponse}
+import com.thenewmotion.ocpp.Version1X
 import com.thenewmotion.ocpp.VersionFamily.{V1X, V1XCentralSystemMessages, V1XChargePointMessages}
 import com.thenewmotion.ocpp.json.api.OcppError
 import com.thenewmotion.ocpp.messages.v1x._
@@ -37,7 +38,7 @@ class OpsSpec extends Specification {
   class MutableOpsMock {
     import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, TimeUnit}
 
-    private val requestsQueue: BlockingQueue[IncomingMessage[CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]] = new ArrayBlockingQueue[IncomingMessage[CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]](1000)
+    private val requestsQueue: BlockingQueue[GenericIncomingMessage[CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]] = new ArrayBlockingQueue[GenericIncomingMessage[CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]](1000)
     private val responsesQueue: BlockingQueue[ChargePointRes] = new ArrayBlockingQueue[ChargePointRes](1000)
 
     def responses: Iterable[ChargePointRes] = responsesQueue.asScala
@@ -93,8 +94,9 @@ class OpsSpec extends Specification {
       implicit val csmsMessageTypes = V1XCentralSystemMessages
       implicit val executionContext = global
 
-      override protected def connectionData: OcppConnectionData[
+      override protected def connectionData: DocileConnection[
         V1X.type,
+        Version1X,
         CentralSystemReq,
         CentralSystemRes,
         CentralSystemReqRes,
