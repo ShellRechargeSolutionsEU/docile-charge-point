@@ -44,7 +44,7 @@ trait CoreOps[
   val logger = Logger(LoggerFactory.getLogger("script"))
   def say(m: String): Unit = logger.info(m)
 
-  protected def connectionData: DocileConnection[VFam, _, OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
+  protected def connection: DocileConnection[VFam, _, OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
 
   /**
    * Send an OCPP request to the Central System under test.
@@ -59,7 +59,7 @@ trait CoreOps[
    * @tparam Q
    */
   def send[Q <: OutReq](req: Q)(implicit reqRes: OutReqRes[Q, _ <: InRes]): Unit =
-    connectionData.ocppClient match {
+    connection.ocppClient match {
       case None =>
         throw ExpectationFailed("Trying to send an OCPP message while not connected")
       case Some (client) =>
@@ -67,12 +67,12 @@ trait CoreOps[
         client.send(req)(reqRes) onComplete {
           case Success(res) =>
             incomingLogger.info(s"$res")
-            connectionData.receivedMsgManager.enqueue(
+            connection.receivedMsgManager.enqueue(
               IncomingMessage(res)
             )
           case Failure(OcppException(ocppError)) =>
             incomingLogger.info(s"$ocppError")
-            connectionData.receivedMsgManager.enqueue(
+            connection.receivedMsgManager.enqueue(
               IncomingMessage(ocppError)
             )
           case Failure(e) =>
@@ -83,9 +83,9 @@ trait CoreOps[
 
   // WIP an operation to add a default handler for a certain subset of incoming messages
   def handlingIncomingMessages[T](proc: IncomingMessageProcessor[_])(f: => T): T = {
-    connectionData.pushIncomingMessageHandler(proc)
+    connection.pushIncomingMessageHandler(proc)
     val result = f
-    connectionData.popIncomingMessageHandler()
+    connection.popIncomingMessageHandler()
 
     result
   }
@@ -93,7 +93,7 @@ trait CoreOps[
   def awaitIncoming(num: Int)(implicit awaitTimeout: AwaitTimeout): Seq[IncomingMessage] = {
 
     val timeout = awaitTimeout.toDuration
-    def getMsgs = connectionData.receivedMsgManager.dequeue(num)
+    def getMsgs = connection.receivedMsgManager.dequeue(num)
 
     Try(Await.result(getMsgs, timeout)) match {
       case Success(msgs)                => msgs
@@ -108,7 +108,7 @@ trait CoreOps[
    * This can be used in interactive mode to get out of a situation where you've received a bunch of messages that you
    * don't really care about, and you want to get on with things.
    */
-  def flushQ(): Unit = connectionData.receivedMsgManager.flush()
+  def flushQ(): Unit = connection.receivedMsgManager.flush()
 
   def fail(message: String): Nothing = throw ExpectationFailed(message)
 

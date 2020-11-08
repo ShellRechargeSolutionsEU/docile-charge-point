@@ -58,7 +58,7 @@ class OpsSpec extends Specification {
     CsResponse,
     CsReqRes
     ] with Ops {
-    protected lazy val connectionData = sys.error("This test should not do anything with the OCPP connection")
+    protected lazy val connection = sys.error("This test should not do anything with the OCPP connection")
     val csmsMessageTypes = V20CsmsMessages
     val csMessageTypes = V20CsMessages
     implicit val executionContext = ExecutionContext.global

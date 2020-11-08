@@ -43,7 +43,7 @@ trait OpsV20 {
 
   def bootNotification(
     chargingStation: ChargingStation = ChargingStation(
-      serialNumber = Some(connectionData.chargePointIdentity),
+      serialNumber = Some(connection.chargePointIdentity),
       model = "Docile",
       vendorName = "The New Motion BV",
       firmwareVersion = Some("1.0.0"),

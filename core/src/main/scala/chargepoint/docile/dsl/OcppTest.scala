@@ -236,6 +236,8 @@ trait DocileConnection[
       connectionLogger.info(s"Gracefully disconnected from endpoint $endpoint")
       ocppClient = None
     }(executionContext)
+
+    ocppClient = Some(connection)
   }
 
   /** Template method to be implemented by version-specific extending classes to establish a connection for that

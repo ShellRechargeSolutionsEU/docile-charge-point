@@ -23,9 +23,7 @@ class OpsSpec extends Specification {
       mock send GetConfigurationReq(keys = List())
       mock send ClearCacheReq
 
-      val result: Seq[ChargePointReq] =
-
-      expectAllIgnoringUnmatched(
+      val result: Seq[ChargePointReq] = expectAllIgnoringUnmatched(
         clearCacheReq respondingWith ClearCacheRes(accepted = true)
       )
 
@@ -80,21 +78,13 @@ class OpsSpec extends Specification {
       ](err))
     }
 
-    val ops: Ops[
-      V1X.type,
-      CentralSystemReq,
-      CentralSystemRes,
-      CentralSystemReqRes,
-      ChargePointReq,
-      ChargePointRes,
-      ChargePointReqRes
-    ] = new Ops[V1X.type, CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]
+    val ops = new Ops[V1X.type, CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]
             with CoreOps[V1X.type, CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes] {
       implicit val csMessageTypes = V1XChargePointMessages
       implicit val csmsMessageTypes = V1XCentralSystemMessages
       implicit val executionContext = global
 
-      override protected def connectionData: DocileConnection[
+      override protected def connection: DocileConnection[
         V1X.type,
         Version1X,
         CentralSystemReq,

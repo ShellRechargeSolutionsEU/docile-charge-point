@@ -125,7 +125,7 @@ object InteractiveOcppTest {
         val ops: Ocpp1XTest.V1XOps = new Ocpp1XTest.V1XOps
                 with expectations.Ops[VersionFamily.V1X.type, CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]
                 with shortsend.OpsV1X {
-          def connectionData = connDat
+          def connection = connDat
 
           implicit val csmsMessageTypes = VersionFamily.V1XCentralSystemMessages
           implicit val csMessageTypes = VersionFamily.V1XChargePointMessages
@@ -133,7 +133,7 @@ object InteractiveOcppTest {
         }
 
         val promptCommands: InteractiveOcpp1XTest.V1XPromptCommands = new InteractiveOcpp1XTest.V1XPromptCommands {
-          def connectionData = connDat
+          def connection = connDat
         }
       }.asInstanceOf[OcppTest[vfam.type]]
 
@@ -149,7 +149,7 @@ object InteractiveOcppTest {
 
         val ops: Ocpp20Test.V20Ops = new Ocpp20Test.V20Ops
                 with expectations.Ops[VersionFamily.V20.type, CsmsRequest, CsmsResponse, CsmsReqRes, CsRequest, CsResponse, CsReqRes] {
-          def connectionData = connDat
+          def connection = connDat
 
           implicit val csmsMessageTypes = VersionFamily.V20CsmsMessages
           implicit val csMessageTypes = VersionFamily.V20CsMessages
@@ -157,7 +157,7 @@ object InteractiveOcppTest {
         }
 
         val promptCommands: InteractiveOcpp20Test.V20PromptCommands = new InteractiveOcpp20Test.V20PromptCommands {
-          def connectionData = connDat
+          def connection = connDat
         }
       }.asInstanceOf[OcppTest[vfam.type]]
   }
@@ -173,12 +173,12 @@ object InteractiveOcppTest {
     InReqRes[_ <: InReq, _ <: OutRes] <: ReqRes[_, _]
   ] {
 
-    protected def connectionData: DocileConnection[VFam, VersionBound, OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
+    protected def connection: DocileConnection[VFam, VersionBound, OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
 
     def q: Unit =
-      connectionData.receivedMsgManager.currentQueueContents foreach println
+      connection.receivedMsgManager.currentQueueContents foreach println
 
     def whoami: Unit =
-      println(connectionData.chargePointIdentity)
+      println(connection.chargePointIdentity)
   }
 }
