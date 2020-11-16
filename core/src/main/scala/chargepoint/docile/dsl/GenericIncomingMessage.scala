@@ -22,8 +22,7 @@ object GenericIncomingMessage {
     InReq <: Request,
     OutRes <: Response,
     InReqRes[_ <: InReq, _ <: OutRes] <: ReqRes[_, _]
-  ](res: InRes)(
-  ): IncomingResponse[
+  ](res: InRes): IncomingResponse[
     OutReq,
     InRes,
     OutReqRes,

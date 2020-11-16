@@ -9,6 +9,7 @@ import javax.net.ssl.SSLContext
 import scala.language.higherKinds
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success}
 import com.thenewmotion.ocpp.{Version, Version1X, VersionFamily}
 import com.thenewmotion.ocpp.json.api._
 import com.thenewmotion.ocpp.messages.{ReqRes, Request, Response}
@@ -16,6 +17,7 @@ import com.thenewmotion.ocpp.messages.v1x.{CentralSystemReq, CentralSystemReqRes
 import com.thenewmotion.ocpp.messages.v20._
 import com.typesafe.scalalogging.Logger
 import org.slf4j.LoggerFactory
+
 
 trait OcppTest[VFam <: VersionFamily] {
 
@@ -239,6 +241,32 @@ trait DocileConnection[
 
     ocppClient = Some(connection)
   }
+
+  def sendRequestAndManageResponse[REQ <: OutgoingReqBound](req: REQ)(
+    implicit reqRes: OutgoingReqRes[REQ, _ <: IncomingResBound],
+    executionContext: ExecutionContext
+  ): Unit =
+    ocppClient match {
+      case None =>
+        throw ExpectationFailed("Trying to send an OCPP message while not connected")
+      case Some(client) =>
+        outgoingLogger.info(s"$req")
+        client.send(req)(reqRes) onComplete {
+          case Success(res) =>
+            incomingLogger.info(s"$res")
+            receivedMsgManager.enqueue(
+              GenericIncomingMessage[OutgoingReqBound, IncomingResBound, OutgoingReqRes, IncomingReqBound, OutgoingResBound, IncomingReqRes](res)
+            )
+          case Failure(OcppException(ocppError)) =>
+            incomingLogger.info(s"$ocppError")
+            receivedMsgManager.enqueue(
+              GenericIncomingMessage[OutgoingReqBound, IncomingResBound, OutgoingReqRes, IncomingReqBound, OutgoingResBound, IncomingReqRes](ocppError)
+            )
+          case Failure(e) =>
+            connectionLogger.error(s"Failed to get response to outgoing OCPP request $req: ${e.getMessage}\n\t${e.getStackTrace.mkString("\n\t")}")
+            throw ExecutionError(e)
+        }
+    }
 
   /** Template method to be implemented by version-specific extending classes to establish a connection for that
    * version of OCPP */

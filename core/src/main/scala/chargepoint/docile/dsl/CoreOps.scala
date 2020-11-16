@@ -59,27 +59,7 @@ trait CoreOps[
    * @tparam Q
    */
   def send[Q <: OutReq](req: Q)(implicit reqRes: OutReqRes[Q, _ <: InRes]): Unit =
-    connection.ocppClient match {
-      case None =>
-        throw ExpectationFailed("Trying to send an OCPP message while not connected")
-      case Some (client) =>
-        outgoingLogger.info(s"$req")
-        client.send(req)(reqRes) onComplete {
-          case Success(res) =>
-            incomingLogger.info(s"$res")
-            connection.receivedMsgManager.enqueue(
-              IncomingMessage(res)
-            )
-          case Failure(OcppException(ocppError)) =>
-            incomingLogger.info(s"$ocppError")
-            connection.receivedMsgManager.enqueue(
-              IncomingMessage(ocppError)
-            )
-          case Failure(e) =>
-            opsLogger.error(s"Failed to get response to outgoing OCPP request $req: ${e.getMessage}\n\t${e.getStackTrace.mkString("\n\t")}")
-            throw ExecutionError(e)
-    }
-  }
+    connection.sendRequestAndManageResponse(req)
 
   // WIP an operation to add a default handler for a certain subset of incoming messages
   def handlingIncomingMessages[T](proc: IncomingMessageProcessor[_])(f: => T): T = {
