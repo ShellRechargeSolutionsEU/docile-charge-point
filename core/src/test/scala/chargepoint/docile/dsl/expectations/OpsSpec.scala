@@ -8,29 +8,27 @@ import com.thenewmotion.ocpp.Version1X
 import com.thenewmotion.ocpp.VersionFamily.{V1X, V1XCentralSystemMessages, V1XChargePointMessages}
 import com.thenewmotion.ocpp.json.api.OcppError
 import com.thenewmotion.ocpp.messages.v1x._
-import org.specs2.mutable.Specification
+import org.scalatest.flatspec.AnyFlatSpec
 
-class OpsSpec extends Specification {
+class OpsSpec extends AnyFlatSpec {
 
-  "Ops" should {
-    "await for messages ignoring not matched" in {
-      val mock = new MutableOpsMock()
+  "Ops" should "await for messages ignoring not matched" in {
+    val mock = new MutableOpsMock()
 
-      import mock.ops._
+    import mock.ops._
 
-      implicit val awaitTimeout: AwaitTimeout = AwaitTimeoutInMillis(5000)
+    implicit val awaitTimeout: AwaitTimeout = AwaitTimeoutInMillis(5000)
 
-      mock send GetConfigurationReq(keys = List())
-      mock send ClearCacheReq
+    mock send GetConfigurationReq(keys = List())
+    mock send ClearCacheReq
 
-      val result: Seq[ChargePointReq] = expectAllIgnoringUnmatched(
-        clearCacheReq respondingWith ClearCacheRes(accepted = true)
-      )
+    val result: Seq[ChargePointReq] = expectAllIgnoringUnmatched(
+      clearCacheReq respondingWith ClearCacheRes(accepted = true)
+    )
 
-      result must_=== Seq(ClearCacheReq)
-      mock.responses.size must_=== 1
-      mock.responses.head must_=== ClearCacheRes(accepted = true)
-    }
+    assert(result === Seq(ClearCacheReq))
+    assert(mock.responses.size === 1)
+    assert(mock.responses.head === ClearCacheRes(accepted = true))
   }
 
   class MutableOpsMock {

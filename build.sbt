@@ -59,7 +59,8 @@ lazy val coreDeps = Seq(
   "com.thenewmotion.ocpp"       %% "ocpp-j-api"       % "9.2.3",
   "com.typesafe.scala-logging"  %% "scala-logging"    % "3.9.0",
 
-  "org.specs2"                  %% "specs2-core"      % "4.3.4"    % "test"
+  "org.scalatest"               %% "scalatest"        % "3.2.2"    % "test",
+  "org.scalamock"               %% "scalamock"        % "5.1.0"    % "test"
 )
 
 def loaderDeps(scalaVersion: String) = Seq(
