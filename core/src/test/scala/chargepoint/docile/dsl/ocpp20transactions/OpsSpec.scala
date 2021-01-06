@@ -11,13 +11,13 @@ import org.scalatest.flatspec.AnyFlatSpec
 class OpsSpec extends AnyFlatSpec {
 
   "ocpp20transactions.Ops" should "generate a transaction UUID on transaction start" in {
-    val (tx, _) = ops.startTransactionAtCablePluggedIn()
+    val (tx, _) = ops().startTransactionAtCablePluggedIn()
 
-    assert(tx.data.id === "\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}")
+    assert(tx.data.id.matches("\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}"))
   }
 
   it should "return transaction messages with incrementing sequence numbers" in {
-    val (tx, req0) = ops.startTransactionAtCablePluggedIn()
+    val (tx, req0) = ops().startTransactionAtCablePluggedIn()
 
     val req1 = tx.startEnergyOffer()
     val req2 = tx.end()
@@ -26,11 +26,12 @@ class OpsSpec extends AnyFlatSpec {
   }
 
   it should "return transaction messages with incrementing sequence numbers over multiple transactions" in {
-    val (tx0, req0) = ops.startTransactionAtCablePluggedIn()
+    val myOps = ops()
+    val (tx0, req0) = myOps.startTransactionAtCablePluggedIn()
 
     val req1 = tx0.end()
 
-    val (tx1, req2) = ops.startTransactionAtAuthorized()
+    val (tx1, req2) = myOps.startTransactionAtAuthorized()
 
     val req3 = tx1.end()
 
@@ -38,14 +39,14 @@ class OpsSpec extends AnyFlatSpec {
   }
 
   it should "specify the EVSE and connector ID on the first message, and not later" in {
-    val (tx, req0) = ops.startTransactionAtAuthorized(evseId = 2, connectorId = 3)
+    val (tx, req0) = ops().startTransactionAtAuthorized(evseId = 2, connectorId = 3)
 
     val req1 = tx.plugInCable()
 
     assert((req0.evse, req1.evse) === ((Some(EVSE(2, Some(3))), None)))
   }
 
-  val ops = new CoreOps[
+  def ops(): Ops = new CoreOps[
     VersionFamily.V20.type,
     CsmsRequest,
     CsmsResponse,
