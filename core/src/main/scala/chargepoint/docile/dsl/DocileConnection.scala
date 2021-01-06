@@ -83,9 +83,10 @@ trait DocileConnection[
             ()
           }
 
-          receivedMsgManager.enqueue(
-            GenericIncomingMessage[OutgoingReqBound, IncomingResBound, OutgoingReqRes, IncomingReqBound, OutgoingResBound, IncomingReqRes](req, respond _)
-          )
+          val incomingMsg = GenericIncomingMessage[OutgoingReqBound, IncomingResBound, OutgoingReqRes, IncomingReqBound, OutgoingResBound, IncomingReqRes](req, respond _)
+          val incomingMsgHandler = incomingMessageHandlerStack.find(_.accepts(incomingMsg))
+
+          incomingMsgHandler.map(_.fireSideEffects(incomingMsg)).getOrElse(receivedMsgManager.enqueue(incomingMsg))
 
           // TODO nicer conversion?
           responsePromise.future.map(_.asInstanceOf[RES])(ec)

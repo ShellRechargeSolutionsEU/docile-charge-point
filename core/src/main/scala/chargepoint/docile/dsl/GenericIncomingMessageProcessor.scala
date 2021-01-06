@@ -40,7 +40,7 @@ trait GenericIncomingMessageProcessor[
    * Execute the side effects of this processor.
    *
    * In an OCPP test, this is supposed to happen when an assertion expecting a
-   * certain incoming message has received an inomcing message that matches
+   * certain incoming message has received an incoming message that matches
    * the expectation.
    */
   def fireSideEffects(msg: IncomingMessage): Unit
