@@ -335,6 +335,17 @@ expectIncoming(
 )
 ```
 
+### Setting up default handlers of certain messages
+
+Sometimes Central Systems will send a charge point messages that it just doesn't
+see coming. Two back-offices of major Dutch charge point vendors tend to probe
+charge points periodically for their configuration settings using
+`GetConfigurationReq` messages. In order to keep such unanticipated incoming
+messages from getting in your incoming message queue and making your tests fail,
+you can catch them with `handlingIncomingMessages`. An example of its use is given
+[here](examples/ocpp1x/handling-incoming-messages.scala).
+
+
 ## Running on the command line with an interactive prompt
 
 You can also go into an interactive testing session on the command line. To do that, pass the `-i` command line flag:
@@ -503,9 +514,6 @@ It's far from finished now. The next steps I plan to develop:
    when an assertion fails in a script
 
  * Add a command in interactive mode to run a script from a file or URL
-
- * Add a functionality to automatically respond to messages matching a
-   certain pattern in a certain way
 
  * Messages of OCPP 2.0 that seem to be in demand:
    * ChangeAvailability
