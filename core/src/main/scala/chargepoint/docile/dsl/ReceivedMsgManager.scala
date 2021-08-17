@@ -1,8 +1,9 @@
 package chargepoint.docile.dsl
 
+import chargepoint.docile.dsl
+
 import scala.language.higherKinds
 import scala.concurrent.{Future, Promise}
-import chargepoint.docile.dsl.expectations.{IncomingMessage => GenericIncomingMessage}
 import com.thenewmotion.ocpp.messages.{ReqRes, Request, Response}
 import com.typesafe.scalalogging.StrictLogging
 
@@ -19,7 +20,7 @@ class ReceivedMsgManager[
 
   import ReceivedMsgManager._
 
-  type IncomingMessage = GenericIncomingMessage[OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
+  type IncomingMessage = dsl.GenericIncomingMessage[OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
 
   private val messages = mutable.Queue[IncomingMessage]()
 

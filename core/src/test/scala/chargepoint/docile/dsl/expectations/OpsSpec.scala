@@ -3,41 +3,38 @@ package chargepoint.docile.dsl.expectations
 import scala.collection.JavaConverters._
 import scala.concurrent.TimeoutException
 import scala.concurrent.ExecutionContext.global
-import chargepoint.docile.dsl.{AwaitTimeout, AwaitTimeoutInMillis, CoreOps, OcppConnectionData}
+import chargepoint.docile.dsl.{AwaitTimeout, AwaitTimeoutInMillis, CoreOps, DocileConnection, GenericIncomingMessage, IncomingError, IncomingRequest, IncomingResponse}
+import com.thenewmotion.ocpp.Version1X
 import com.thenewmotion.ocpp.VersionFamily.{V1X, V1XCentralSystemMessages, V1XChargePointMessages}
 import com.thenewmotion.ocpp.json.api.OcppError
 import com.thenewmotion.ocpp.messages.v1x._
-import org.specs2.mutable.Specification
+import org.scalatest.flatspec.AnyFlatSpec
 
-class OpsSpec extends Specification {
+class OpsSpec extends AnyFlatSpec {
 
-  "Ops" should {
-    "await for messages ignoring not matched" in {
-      val mock = new MutableOpsMock()
+  "Ops" should "await for messages ignoring not matched" in {
+    val mock = new MutableOpsMock()
 
-      import mock.ops._
+    import mock.ops._
 
-      implicit val awaitTimeout: AwaitTimeout = AwaitTimeoutInMillis(5000)
+    implicit val awaitTimeout: AwaitTimeout = AwaitTimeoutInMillis(5000)
 
-      mock send GetConfigurationReq(keys = List())
-      mock send ClearCacheReq
+    mock send GetConfigurationReq(keys = List())
+    mock send ClearCacheReq
 
-      val result: Seq[ChargePointReq] =
+    val result: Seq[ChargePointReq] = expectAllIgnoringUnmatched(
+      clearCacheReq respondingWith ClearCacheRes(accepted = true)
+    )
 
-      expectAllIgnoringUnmatched(
-        clearCacheReq respondingWith ClearCacheRes(accepted = true)
-      )
-
-      result must_=== Seq(ClearCacheReq)
-      mock.responses.size must_=== 1
-      mock.responses.head must_=== ClearCacheRes(accepted = true)
-    }
+    assert(result === Seq(ClearCacheReq))
+    assert(mock.responses.size === 1)
+    assert(mock.responses.head === ClearCacheRes(accepted = true))
   }
 
   class MutableOpsMock {
     import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, TimeUnit}
 
-    private val requestsQueue: BlockingQueue[IncomingMessage[CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]] = new ArrayBlockingQueue[IncomingMessage[CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]](1000)
+    private val requestsQueue: BlockingQueue[GenericIncomingMessage[CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]] = new ArrayBlockingQueue[GenericIncomingMessage[CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]](1000)
     private val responsesQueue: BlockingQueue[ChargePointRes] = new ArrayBlockingQueue[ChargePointRes](1000)
 
     def responses: Iterable[ChargePointRes] = responsesQueue.asScala
@@ -79,22 +76,15 @@ class OpsSpec extends Specification {
       ](err))
     }
 
-    val ops: Ops[
-      V1X.type,
-      CentralSystemReq,
-      CentralSystemRes,
-      CentralSystemReqRes,
-      ChargePointReq,
-      ChargePointRes,
-      ChargePointReqRes
-    ] = new Ops[V1X.type, CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]
+    val ops = new Ops[V1X.type, CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]
             with CoreOps[V1X.type, CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes] {
       implicit val csMessageTypes = V1XChargePointMessages
       implicit val csmsMessageTypes = V1XCentralSystemMessages
       implicit val executionContext = global
 
-      override protected def connectionData: OcppConnectionData[
+      override protected def connection: DocileConnection[
         V1X.type,
+        Version1X,
         CentralSystemReq,
         CentralSystemRes,
         CentralSystemReqRes,

@@ -2,7 +2,7 @@ package chargepoint.docile
 package test
 
 import chargepoint.docile.dsl._
-import com.thenewmotion.ocpp.VersionFamily
+import com.thenewmotion.ocpp.{Version, Version1X, VersionFamily}
 import com.thenewmotion.ocpp.messages.v1x.{CentralSystemReq, CentralSystemReqRes, CentralSystemRes, ChargePointReq, ChargePointReqRes, ChargePointRes}
 import com.thenewmotion.ocpp.messages.v20._
 import com.thenewmotion.ocpp.messages.{ReqRes, Request, Response}
@@ -61,6 +61,7 @@ object InteractiveOcpp1XTest {
 
   trait V1XPromptCommands extends InteractiveOcppTest.PromptCommands[
     VersionFamily.V1X.type,
+    Version1X,
     CentralSystemReq,
     CentralSystemRes,
     CentralSystemReqRes,
@@ -98,6 +99,7 @@ object InteractiveOcpp20Test {
 
   trait V20PromptCommands extends InteractiveOcppTest.PromptCommands[
     VersionFamily.V20.type,
+    Version.V20.type,
     CsmsRequest,
     CsmsResponse,
     CsmsReqRes,
@@ -114,7 +116,7 @@ object InteractiveOcppTest {
 
       new InteractiveOcpp1XTest {
 
-        private def connDat = connectionData
+        private def connDat = connection
 
         implicit val csmsMessageTypes = VersionFamily.V1XCentralSystemMessages
         implicit val csMessageTypes = VersionFamily.V1XChargePointMessages
@@ -123,7 +125,7 @@ object InteractiveOcppTest {
         val ops: Ocpp1XTest.V1XOps = new Ocpp1XTest.V1XOps
                 with expectations.Ops[VersionFamily.V1X.type, CentralSystemReq, CentralSystemRes, CentralSystemReqRes, ChargePointReq, ChargePointRes, ChargePointReqRes]
                 with shortsend.OpsV1X {
-          def connectionData = connDat
+          def connection = connDat
 
           implicit val csmsMessageTypes = VersionFamily.V1XCentralSystemMessages
           implicit val csMessageTypes = VersionFamily.V1XChargePointMessages
@@ -131,7 +133,7 @@ object InteractiveOcppTest {
         }
 
         val promptCommands: InteractiveOcpp1XTest.V1XPromptCommands = new InteractiveOcpp1XTest.V1XPromptCommands {
-          def connectionData = connDat
+          def connection = connDat
         }
       }.asInstanceOf[OcppTest[vfam.type]]
 
@@ -139,7 +141,7 @@ object InteractiveOcppTest {
 
       new InteractiveOcpp20Test {
 
-        private def connDat = connectionData
+        private def connDat = connection
 
         implicit val csmsMessageTypes = VersionFamily.V20CsmsMessages
         implicit val csMessageTypes = VersionFamily.V20CsMessages
@@ -147,7 +149,7 @@ object InteractiveOcppTest {
 
         val ops: Ocpp20Test.V20Ops = new Ocpp20Test.V20Ops
                 with expectations.Ops[VersionFamily.V20.type, CsmsRequest, CsmsResponse, CsmsReqRes, CsRequest, CsResponse, CsReqRes] {
-          def connectionData = connDat
+          def connection = connDat
 
           implicit val csmsMessageTypes = VersionFamily.V20CsmsMessages
           implicit val csMessageTypes = VersionFamily.V20CsMessages
@@ -155,13 +157,14 @@ object InteractiveOcppTest {
         }
 
         val promptCommands: InteractiveOcpp20Test.V20PromptCommands = new InteractiveOcpp20Test.V20PromptCommands {
-          def connectionData = connDat
+          def connection = connDat
         }
       }.asInstanceOf[OcppTest[vfam.type]]
   }
 
   trait PromptCommands[
     VFam <: VersionFamily,
+    VersionBound <: Version,
     OutReq <: Request,
     InRes <: Response,
     OutReqRes[_ <: OutReq, _ <: InRes] <: ReqRes[_, _],
@@ -170,12 +173,12 @@ object InteractiveOcppTest {
     InReqRes[_ <: InReq, _ <: OutRes] <: ReqRes[_, _]
   ] {
 
-    protected def connectionData: OcppConnectionData[VFam, OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
+    protected def connection: DocileConnection[VFam, VersionBound, OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes]
 
     def q: Unit =
-      connectionData.receivedMsgManager.currentQueueContents foreach println
+      connection.receivedMsgManager.currentQueueContents foreach println
 
     def whoami: Unit =
-      println(connectionData.chargePointIdentity)
+      println(connection.chargePointIdentity)
   }
 }

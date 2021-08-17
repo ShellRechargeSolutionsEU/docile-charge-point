@@ -1,101 +1,90 @@
 package chargepoint.docile.dsl
 
-import chargepoint.docile.dsl.expectations.IncomingMessage
 import com.thenewmotion.ocpp.messages.v1x._
-import org.specs2.mutable.Specification
-import org.specs2.specification.Scope
-import org.specs2.concurrent.ExecutionEnv
+import org.scalatest.flatspec.AnyFlatSpec
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class ReceivedMsgManagerSpec(implicit ee: ExecutionEnv) extends Specification {
+class ReceivedMsgManagerSpec extends AnyFlatSpec {
 
-  "ReceivedMsgManager" should {
+  "ReceivedMsgManager" should "pass on messages to those that requested them" in {
+    val sut = receivedMsgManager()
+    val testMsg = GenericIncomingMessage[
+      CentralSystemReq,
+      CentralSystemRes,
+      CentralSystemReqRes,
+      ChargePointReq,
+      ChargePointRes,
+      ChargePointReqRes
+    ](StatusNotificationRes)
 
-    "pass on messages to those that requested them" in {
-      val sut = new ReceivedMsgManager[
-        CentralSystemReq,
-        CentralSystemRes,
-        CentralSystemReqRes,
-        ChargePointReq,
-        ChargePointRes,
-        ChargePointReqRes
-      ]
-      val testMsg = IncomingMessage[
-        CentralSystemReq,
-        CentralSystemRes,
-        CentralSystemReqRes,
-        ChargePointReq,
-        ChargePointRes,
-        ChargePointReqRes
-      ](StatusNotificationRes)
+    val f = sut.dequeue(1)
 
-      val f = sut.dequeue(1)
+    assert(!f.isCompleted)
 
-      f.isCompleted must beFalse
+    sut.enqueue(testMsg)
 
-      sut.enqueue(testMsg)
-
-      f must beEqualTo(List(testMsg)).await
-    }
-
-    "remember incoming messages until someone dequeues them" in {
-      val sut = new ReceivedMsgManager[
-        CentralSystemReq,
-        CentralSystemRes,
-        CentralSystemReqRes,
-        ChargePointReq,
-        ChargePointRes,
-        ChargePointReqRes
-      ]
-      val testMsg = IncomingMessage[
-        CentralSystemReq,
-        CentralSystemRes,
-        CentralSystemReqRes,
-        ChargePointReq,
-        ChargePointRes,
-        ChargePointReqRes
-      ](StatusNotificationRes)
-
-      sut.enqueue(testMsg)
-
-      sut.dequeue(1) must beEqualTo(List(testMsg)).await
-    }
-
-    "fulfill request for messages once enough are available" in new TestScope {
-      sut.enqueue(testMsg(1))
-      sut.enqueue(testMsg(2))
-
-      val f = sut.dequeue(3)
-
-      f.isCompleted must beFalse
-
-      sut.enqueue(testMsg(3))
-
-      f must beEqualTo(List(testMsg(1), testMsg(2), testMsg(3))).await
-    }
-
-    "allow a peek at what's in the queue" in new TestScope {
-      sut.enqueue(testMsg(1))
-      sut.enqueue(testMsg(2))
-
-      sut.currentQueueContents mustEqual List(testMsg(1), testMsg(2))
-    }
-
-    "flush the queue" in new TestScope {
-      sut.enqueue(testMsg(1))
-      sut.enqueue(testMsg(2))
-
-      sut.currentQueueContents mustEqual List(testMsg(1), testMsg(2))
-
-      sut.flush()
-
-      sut.currentQueueContents must beEmpty
+    f.map { dequeuedMsg =>
+      assert(dequeuedMsg === List(testMsg))
     }
   }
 
-  private trait TestScope extends Scope {
-    val testIdTagInfo = IdTagInfo(status = AuthorizationStatus.Accepted)
+  it should "remember incoming messages until someone dequeues them" in {
+    val sut = receivedMsgManager()
+    val testMsg = GenericIncomingMessage[
+      CentralSystemReq,
+      CentralSystemRes,
+      CentralSystemReqRes,
+      ChargePointReq,
+      ChargePointRes,
+      ChargePointReqRes
+    ](StatusNotificationRes)
 
-    val sut = new ReceivedMsgManager[
+    sut.enqueue(testMsg)
+
+    sut.dequeue(1) map { dequeuedMsgs =>
+      assert(dequeuedMsgs === List(testMsg))
+    }
+  }
+
+  it should "fulfill request for messages once enough are available" in {
+    val sut = receivedMsgManager()
+    sut.enqueue(testMsg(1))
+    sut.enqueue(testMsg(2))
+
+    val f = sut.dequeue(3)
+
+    assert(!f.isCompleted)
+
+    sut.enqueue(testMsg(3))
+
+    f map { dequeuedMsgs =>
+      assert(dequeuedMsgs === List(testMsg(1), testMsg(2), testMsg(3)))
+    }
+  }
+
+  it should "allow a peek at what's in the queue" in {
+    val sut = receivedMsgManager()
+    sut.enqueue(testMsg(1))
+    sut.enqueue(testMsg(2))
+
+    assert(sut.currentQueueContents === List(testMsg(1), testMsg(2)))
+  }
+
+  it should "flush the queue" in {
+    val sut = receivedMsgManager()
+    sut.enqueue(testMsg(1))
+    sut.enqueue(testMsg(2))
+
+    assert(sut.currentQueueContents === List(testMsg(1), testMsg(2)))
+
+    sut.flush()
+
+    assert(sut.currentQueueContents.isEmpty)
+  }
+
+  private val testIdTagInfo = IdTagInfo(status = AuthorizationStatus.Accepted)
+
+  private def receivedMsgManager() = new ReceivedMsgManager[
       CentralSystemReq,
       CentralSystemRes,
       CentralSystemReqRes,
@@ -104,7 +93,7 @@ class ReceivedMsgManagerSpec(implicit ee: ExecutionEnv) extends Specification {
       ChargePointReqRes
     ]
 
-    def testMsg(seqNo: Int) = IncomingMessage[
+  private def testMsg(seqNo: Int) = GenericIncomingMessage[
       CentralSystemReq,
       CentralSystemRes,
       CentralSystemReqRes,
@@ -115,6 +104,4 @@ class ReceivedMsgManagerSpec(implicit ee: ExecutionEnv) extends Specification {
       transactionId = seqNo,
       idTag = testIdTagInfo
     ))
-
-  }
 }

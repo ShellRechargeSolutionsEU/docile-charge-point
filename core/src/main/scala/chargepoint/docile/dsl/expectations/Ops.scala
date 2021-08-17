@@ -21,36 +21,7 @@ trait Ops[
 ] {
   self: CoreOps[VFam, OutReq, InRes, OutReqRes, InReq, OutRes, InReqRes] =>
 
-  /** An IncomingMessageProcessor[T] is like a PartialFunction[T] with side effects */
-  trait IncomingMessageProcessor[+T] {
-    /** Whether this processor can do something with a certain incoming message */
-    // TODO add type alias in CoreOps to get rid of this VFam parameterization everywhere?
-    def accepts(msg: IncomingMessage): Boolean
-
-    /**
-     * The outcome of applying this processor to the given incoming message.
-     *
-     *  Applying the processor do a message outside of its domain should throw
-     *  a MatchError.
-     */
-    def result(msg: IncomingMessage): T
-
-    /**
-     * Execute the side effects of this processor.
-     *
-     * In an OCPP test, this is supposed to happen when an assertion expecting a
-     * certain incoming message has received an inomcing message that matches
-     * the expectation.
-     */
-    def fireSideEffects(msg: IncomingMessage): Unit
-
-    def lift(msg: IncomingMessage): Option[T] =
-      if (accepts(msg))
-        Some(result(msg))
-      else
-        None
-  }
-
+  // TODO document why we need this subset of IncomingMessageProcessor
   sealed trait IncomingRequestProcessor[+T] extends IncomingMessageProcessor[T]
 
   def expectIncoming[T](proc: IncomingMessageProcessor[T])(implicit awaitTimeout: AwaitTimeout): T = {
@@ -159,13 +130,13 @@ trait Ops[
     error restrictedBy { case e@OcppError(`code`, _) => e }
 
 
-  def getConfigurationReq = requestMatching { case r: GetConfigurationReq => r }
+  def getConfigurationReq: IncomingRequestProcessor[GetConfigurationReq] = requestMatching { case r: GetConfigurationReq => r }
   def changeConfigurationReq = requestMatching { case r: ChangeConfigurationReq => r }
   def getDiagnosticsReq = requestMatching { case r: GetDiagnosticsReq => r }
   def changeAvailabilityReq = requestMatching { case r: ChangeAvailabilityReq => r }
-  def getLocalListVersionReq = requestMatching { case r if r == GetLocalListVersionReq => r }
+  def getLocalListVersionReq = requestMatching { case r: GetLocalListVersionReq.type => r }
   def sendLocalListReq = requestMatching { case r: SendLocalListReq => r }
-  def clearCacheReq = requestMatching { case r if r == ClearCacheReq => r }
+  def clearCacheReq: IncomingRequestProcessor[ClearCacheReq.type] = requestMatching { case r: ClearCacheReq.type => r }
   def resetReq = requestMatching { case r: ResetReq => r }
   def updateFirmwareReq = requestMatching { case r: UpdateFirmwareReq => r }
   def remoteStartTransactionReq = requestMatching { case r: RemoteStartTransactionReq => r }

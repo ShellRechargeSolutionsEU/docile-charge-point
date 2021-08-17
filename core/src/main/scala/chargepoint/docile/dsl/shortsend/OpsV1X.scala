@@ -40,8 +40,8 @@ trait OpsV1X {
   def bootNotification(
     chargePointVendor: String = "The New Motion BV",
     chargePointModel: String = "Test Basic",
-    chargePointSerialNumber: Option[String] = Some(connectionData.chargePointIdentity),
-    chargeBoxSerialNumber: Option[String] = Some(connectionData.chargePointIdentity),
+    chargePointSerialNumber: Option[String] = Some(connection.chargePointIdentity),
+    chargeBoxSerialNumber: Option[String] = Some(connection.chargePointIdentity),
     firmwareVersion: Option[String] = Some("1.0.0"),
     iccid: Option[String] = None,
     imsi: Option[String] = None,

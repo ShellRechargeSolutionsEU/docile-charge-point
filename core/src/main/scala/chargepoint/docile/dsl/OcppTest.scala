@@ -7,19 +7,13 @@ import com.thenewmotion.ocpp.VersionFamily.{CsMessageTypesForVersionFamily, Csms
 import javax.net.ssl.SSLContext
 
 import scala.language.higherKinds
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.ExecutionContext
 import com.thenewmotion.ocpp.{Version, Version1X, VersionFamily}
-import com.thenewmotion.ocpp.json.api._
 import com.thenewmotion.ocpp.messages.{ReqRes, Request, Response}
 import com.thenewmotion.ocpp.messages.v1x.{CentralSystemReq, CentralSystemReqRes, CentralSystemRes, ChargePointReq, ChargePointReqRes, ChargePointRes}
-import com.thenewmotion.ocpp.messages.v20._
-import com.typesafe.scalalogging.Logger
-import org.slf4j.LoggerFactory
-import expectations.IncomingMessage
+import com.thenewmotion.ocpp.messages.v20.{CsmsRequest, CsmsResponse, CsmsReqRes, CsRequest, CsResponse, CsReqRes}
 
-trait OcppTest[VFam <: VersionFamily] extends MessageLogging {
-  private val connectionLogger = Logger(LoggerFactory.getLogger("connection"))
+trait OcppTest[VFam <: VersionFamily] {
 
   // these type variables are filled in differently for OCPP 1.X and OCPP 2.0
   type OutgoingReqBound <: Request
@@ -32,17 +26,18 @@ trait OcppTest[VFam <: VersionFamily] extends MessageLogging {
 
   implicit val csMessageTypes: CsMessageTypesForVersionFamily[VFam, IncomingReqBound, OutgoingResBound, IncomingReqRes]
   implicit val csmsMessageTypes: CsmsMessageTypesForVersionFamily[VFam, OutgoingReqBound, IncomingResBound, OutgoingReqRes]
+
   val executionContext: ExecutionContext
 
   /**
     * The current OCPP with some associated data
     *
-    * This is a var instead of a val an immutable because I hope this will allow
-    * us to write tests that disconnect and reconnect when we have a more
-    * complete test DSL.
+    * This member is effectively the interface between CoreOps and the mutable
+    * data required to implement the core operations defined in CoreOps
     */
-  protected var connectionData: OcppConnectionData[
+  protected val connection: DocileConnection[
     VFam,
+    VersionBound,
     OutgoingReqBound,
     IncomingResBound,
     OutgoingReqRes,
@@ -58,88 +53,11 @@ trait OcppTest[VFam <: VersionFamily] extends MessageLogging {
     authKey: Option[String],
     defaultAwaitTimeout: AwaitTimeout
   )(implicit sslContext: SSLContext): Unit = {
-    val receivedMsgManager = new  ReceivedMsgManager[
-      OutgoingReqBound,
-      IncomingResBound,
-      OutgoingReqRes,
-      IncomingReqBound,
-      OutgoingResBound,
-      IncomingReqRes
-    ]()
-
-    connect(receivedMsgManager, chargePointId, endpoint, version, authKey)
+    connection.connect(chargePointId, endpoint, version, authKey)(executionContext, sslContext)
     run(defaultAwaitTimeout)
-    disconnect()
+    connection.disconnect()
   }
 
-  private def connect(
-    receivedMsgManager: ReceivedMsgManager[OutgoingReqBound, IncomingResBound, OutgoingReqRes, IncomingReqBound, OutgoingResBound, IncomingReqRes],
-    chargePointId: String,
-    endpoint: URI,
-    version: VersionBound,
-    authKey: Option[String]
-  )(implicit sslContext: SSLContext): Unit = {
-
-    connectionLogger.info(s"Connecting to OCPP v${version.name} endpoint $endpoint")
-
-    val connection = connect(chargePointId, endpoint, version, authKey)(sslContext) {
-          new RequestHandler[IncomingReqBound, OutgoingResBound, IncomingReqRes] {
-            def apply[REQ <: IncomingReqBound, RES <: OutgoingResBound](req: REQ)(implicit reqRes: IncomingReqRes[REQ, RES], ec: ExecutionContext): Future[RES] = {
-
-              incomingLogger.info(s"$req")
-
-              val responsePromise = Promise[OutgoingResBound]()
-
-              def respond(res: OutgoingResBound): Unit = {
-                outgoingLogger.info(s"$res")
-                responsePromise.success(res)
-                ()
-              }
-
-              receivedMsgManager.enqueue(
-                IncomingMessage[OutgoingReqBound, IncomingResBound, OutgoingReqRes, IncomingReqBound, OutgoingResBound, IncomingReqRes](req, respond _)
-              )
-
-              // TODO nicer conversion?
-              responsePromise.future.map(_.asInstanceOf[RES])
-            }
-          }
-    }
-
-    connection.onClose.foreach { _ =>
-      connectionLogger.info(s"Gracefully disconnected from endpoint $endpoint")
-      connectionData = connectionData.copy[
-        VFam,
-        OutgoingReqBound,
-        IncomingResBound,
-        OutgoingReqRes,
-        IncomingReqBound,
-        OutgoingResBound,
-        IncomingReqRes
-      ](ocppClient = None)
-    }(executionContext)
-
-    connectionData = OcppConnectionData[VFam, OutgoingReqBound, IncomingResBound, OutgoingReqRes, IncomingReqBound, OutgoingResBound, IncomingReqRes](Some(connection), receivedMsgManager, chargePointId)
-  }
-
-  protected def connect(
-    chargePointId: String,
-    endpoint: URI,
-    version: VersionBound,
-    authKey: Option[String]
-  )(implicit sslContext: SSLContext): RequestHandler[IncomingReqBound, OutgoingResBound, IncomingReqRes] => OcppJsonClient[
-    VFam,
-    OutgoingReqBound,
-    IncomingResBound,
-    OutgoingReqRes,
-    IncomingReqBound,
-    OutgoingResBound,
-    IncomingReqRes
-  ]
-
-  private def disconnect(): Unit = connectionData.ocppClient.foreach { conn =>
-    Await.result(conn.close(), 45.seconds)
-  }
 
   protected def run(defaultAwaitTimeout: AwaitTimeout): Unit
 }
@@ -154,24 +72,17 @@ trait Ocpp1XTest extends OcppTest[VersionFamily.V1X.type] {
   type IncomingReqRes[Q <: ChargePointReq, S <: ChargePointRes] = ChargePointReqRes[Q, S]
   type VersionBound = Version1X
 
-  override protected var connectionData: OcppConnectionData[
+  override protected val connection: DocileConnection[
     VersionFamily.V1X.type,
+    Version1X,
     CentralSystemReq,
     CentralSystemRes,
     CentralSystemReqRes,
     ChargePointReq,
     ChargePointRes,
     ChargePointReqRes
-  ] = _
+  ] = DocileConnection.forVersion1x()
 
-  protected override def connect(
-    chargePointId: String,
-    endpoint: URI,
-    version: Version1X,
-    authKey: Option[String]
-  )(implicit sslCtx: SSLContext): ChargePointRequestHandler => Ocpp1XJsonClient = { reqHandler =>
-    OcppJsonClient.forVersion1x(chargePointId, endpoint, List(version), authKey)(reqHandler)(executionContext, sslCtx)
-  }
 }
 
 object Ocpp1XTest {
@@ -205,24 +116,16 @@ trait Ocpp20Test extends OcppTest[VersionFamily.V20.type] {
   override type IncomingReqRes[Q <: CsRequest, S <: CsResponse] = CsReqRes[Q, S]
   override type VersionBound = V20.type
 
-  override protected var connectionData: OcppConnectionData[
+  override protected val connection: DocileConnection[
     VersionFamily.V20.type,
+    Version.V20.type,
     CsmsRequest,
     CsmsResponse,
     CsmsReqRes,
     CsRequest,
     CsResponse,
     CsReqRes
-  ] = _
-
-  protected override def connect(
-    chargePointId: String,
-    endpoint: URI,
-    version: V20.type,
-    authKey: Option[String]
-  )(implicit sslCtx: SSLContext): CsRequestHandler => Ocpp20JsonClient = { reqHandler =>
-    OcppJsonClient.forVersion20(chargePointId, endpoint, authKey)(reqHandler)(executionContext, sslCtx)
-  }
+  ] = DocileConnection.forVersion20()
 }
 
 object Ocpp20Test {
@@ -247,26 +150,3 @@ object Ocpp20Test {
     with ocpp20transactions.Ops
 }
 
-case class OcppConnectionData[
-  VFam <: VersionFamily,
-  OutgoingReqBound <: Request,
-  IncomingResBound <: Response,
-  OutgoingReqRes[_ <: OutgoingReqBound, _ <: IncomingResBound] <: ReqRes[_, _],
-  IncomingReqBound <: Request,
-  OutgoingResBound <: Response,
-  IncomingReqRes[_ <: IncomingReqBound, _ <: OutgoingResBound] <: ReqRes[_, _]
-](
-  ocppClient:
-    Option[OcppJsonClient[
-      VFam,
-      OutgoingReqBound,
-      IncomingResBound,
-      OutgoingReqRes,
-      IncomingReqBound,
-      OutgoingResBound,
-      IncomingReqRes
-    ]
-  ],
-  receivedMsgManager: ReceivedMsgManager[OutgoingReqBound, IncomingResBound, OutgoingReqRes, IncomingReqBound, OutgoingResBound, IncomingReqRes],
-  chargePointIdentity: String
-)
