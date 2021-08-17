@@ -9,7 +9,6 @@ lazy val commonSettings = Seq(
 lazy val commandLine = (project in file("cmd"))
   .dependsOn(core)
   .dependsOn(loader)
-  .enablePlugins(OssLibPlugin)
   .settings(
     commonSettings,
     name := "docile-charge-point-command-line",
@@ -27,7 +26,6 @@ lazy val commandLine = (project in file("cmd"))
   )
 
 lazy val core = (project in file("core"))
-  .enablePlugins(OssLibPlugin)
   .settings(
     commonSettings,
     name := "docile-charge-point",
@@ -36,7 +34,6 @@ lazy val core = (project in file("core"))
 
 lazy val loader = (project in file("loader"))
   .dependsOn(core)
-  .enablePlugins(OssLibPlugin)
   .settings(
     commonSettings,
     libraryDependencies ++= loaderDeps(scalaVersion.value),
@@ -46,7 +43,7 @@ lazy val loader = (project in file("loader"))
 lazy val lambda = (project in file("aws-lambda"))
   .dependsOn(core)
   .dependsOn(loader)
-  .enablePlugins(OssLibPlugin) .settings(
+  .settings(
     commonSettings,
     name := "docile-charge-point-lambda",
     retrieveManaged := true,
@@ -56,7 +53,7 @@ lazy val lambda = (project in file("aws-lambda"))
   )
 
 lazy val coreDeps = Seq(
-  "com.thenewmotion.ocpp"       %% "ocpp-j-api"       % "9.2.3",
+  "com.thenewmotion.ocpp"       %% "ocpp-j-api"       % "9.2.3", //you need to compile this locally first
   "com.typesafe.scala-logging"  %% "scala-logging"    % "3.9.0",
 
   "org.specs2"                  %% "specs2-core"      % "4.3.4"    % "test"
@@ -78,8 +75,6 @@ lazy val awsDeps = Seq(
   "com.amazonaws" % "aws-lambda-java-core" % "1.2.0",
   "com.amazonaws" % "aws-lambda-java-events" % "1.2.0"
 )
-
-enablePlugins(OssLibPlugin)
 
 commonSettings
 

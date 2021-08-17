@@ -441,12 +441,6 @@ For maximum flexibility, you can embed docile-charge-point as a library dependen
 "com.newmotion" %% "docile-charge-point" % "0.5.1"
 ```
 
-and make sure that the NewMotion Nexus repository is in your sources by adding this to your `project/plugins.sbt`:
-
-```scala
-resolvers += "TNM" at "http://nexus.thenewmotion.com/content/groups/public"
-```
-
 Then, in your code:
   1. Create tests as instances of `chargepoint.docile.dsl.OcppTest` in your code
   1. Combine them with a testcase name to be a [`chargepoint.docile.test.TestCase`](core/src/main/scala/chargepoint/docile/test/TestCase.scala)
@@ -459,12 +453,6 @@ To load text files as test cases, you need another library as a dependency:
 
 ```scala
 "com.newmotion" %% "docile-charge-point-loader" % "0.5.1"
-```
-
-and of course also in this case the resolver in your `project/plugins.sbt`:
-
-```scala
-resolvers += "TNM" at "http://nexus.thenewmotion.com/content/groups/public"
 ```
 
 Then you'll, besides all the classes for defining and running test cases
