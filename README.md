@@ -6,6 +6,14 @@ A scriptable [OCPP](https://www.openchargealliance.org/protocols/ocpp-20/)
 charge point simulator. Supports OCPP 1.5, 1.6 and 2.0 using JSON over
 WebSocket as the transport.
 
+## Note for open source users
+
+Open source users of this tool will want to use the
+[IHomer fork](https://github.com/IHomer/docile-charge-point/) which is more actively
+supported and published to Maven Central.
+
+## Design
+
 Not as continuously ill-tempered as
 [abusive-charge-point](https://github.com/chargegrid/abusive-charge-point), but
 it can be mean if you script it to be.
